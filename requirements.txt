@@ -1,0 +1,3 @@
+anthropic
+plotly
+numpy

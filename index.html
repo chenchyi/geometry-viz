@@ -234,13 +234,9 @@
         throw new Error(err.error || '生成失败，请重试');
       }
 
-      const result = await res.json();
+      const figData = await res.json();
 
       chartDiv.innerHTML = '';
-
-      // 执行 Claude 生成的 JS 代码
-      const fn = new Function(result.code);
-      const figData = fn();
 
       const layout = {
         ...figData.layout,
