@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>立体几何可视化</title>
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: #f5f7fa;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: linear-gradient(135deg, #2563eb, #7c3aed);
+      color: white;
+      padding: 16px 20px 14px;
+      text-align: center;
+    }
+    header h1 { font-size: 18px; font-weight: 600; letter-spacing: 0.5px; }
+    header p  { font-size: 12px; opacity: 0.85; margin-top: 3px; }
+
+    .input-area {
+      background: white;
+      padding: 16px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    textarea {
+      width: 100%;
+      border: 1.5px solid #d1d5db;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 15px;
+      font-family: inherit;
+      resize: none;
+      outline: none;
+      line-height: 1.5;
+      color: #111827;
+      transition: border-color 0.2s;
+      min-height: 80px;
+    }
+    textarea:focus { border-color: #2563eb; }
+    textarea::placeholder { color: #9ca3af; }
+
+    .btn-generate {
+      width: 100%;
+      margin-top: 10px;
+      padding: 13px;
+      background: linear-gradient(135deg, #2563eb, #7c3aed);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      letter-spacing: 1px;
+    }
+    .btn-generate:active { transform: scale(0.98); }
+    .btn-generate:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .chart-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      min-height: 400px;
+    }
+
+    #chart {
+      width: 100%;
+      max-width: 600px;
+      height: 420px;
+      border-radius: 14px;
+      background: white;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-top: 8px;
+      text-align: center;
+    }
+    .hint span { margin: 0 6px; }
+
+    .state-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #9ca3af;
+      gap: 12px;
+    }
+
+    .state-icon { font-size: 48px; }
+    .state-text { font-size: 14px; text-align: center; line-height: 1.6; }
+
+    .loading-spinner {
+      width: 36px; height: 36px;
+      border: 3px solid #e5e7eb;
+      border-top-color: #2563eb;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error-box {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 10px;
+      padding: 14px 16px;
+      color: #dc2626;
+      font-size: 13px;
+      line-height: 1.5;
+      max-width: 360px;
+      text-align: center;
+    }
+
+    .examples {
+      padding: 0 16px 16px;
+      background: white;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .examples-title {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 8px;
+    }
+    .example-chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .chip {
+      background: #eff6ff;
+      color: #2563eb;
+      border: 1px solid #bfdbfe;
+      border-radius: 20px;
+      padding: 5px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+    .chip:active { background: #dbeafe; }
+
+    @media (min-width: 600px) {
+      header h1 { font-size: 22px; }
+      #chart { height: 520px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>📐 立体几何可视化</h1>
+  <p>输入题目，生成可旋转3D图形</p>
+</header>
+
+<div class="input-area">
+  <textarea id="problemInput" rows="3"
+    placeholder="例如：已知正方体ABCD-A₁B₁C₁D₁，P是棱AA₁的中点，Q是棱CC₁的中点，求截面BPD₁Q的形状"></textarea>
+  <button class="btn-generate" id="generateBtn" onclick="generate()">
+    生成图形
+  </button>
+</div>
+
+<div class="examples">
+  <div class="examples-title">示例题目（点击填入）</div>
+  <div class="example-chips">
+    <span class="chip" onclick="fillExample(this)">正方体ABCD-A₁B₁C₁D₁</span>
+    <span class="chip" onclick="fillExample(this)">三棱锥P-ABC，底面是正三角形，PA⊥底面</span>
+    <span class="chip" onclick="fillExample(this)">正四棱锥P-ABCD，底面边长为2，高为2</span>
+    <span class="chip" onclick="fillExample(this)">长方体ABCD-A₁B₁C₁D₁，长2宽1高1</span>
+  </div>
+</div>
+
+<div class="chart-area">
+  <div id="chart">
+    <div class="state-box" id="emptyState">
+      <div class="state-icon">🔷</div>
+      <div class="state-text">输入立体几何题目<br>点击"生成图形"</div>
+    </div>
+  </div>
+  <div class="hint" id="hint" style="display:none">
+    <span>👆 拖动旋转</span>
+    <span>🤏 双指缩放</span>
+    <span>↔️ 多角度查看</span>
+  </div>
+</div>
+
+<script>
+  async function generate() {
+    const problem = document.getElementById('problemInput').value.trim();
+    if (!problem) {
+      alert('请先输入题目');
+      return;
+    }
+
+    const btn = document.getElementById('generateBtn');
+    const chartDiv = document.getElementById('chart');
+    const hintDiv = document.getElementById('hint');
+
+    btn.disabled = true;
+    btn.textContent = '生成中...';
+    hintDiv.style.display = 'none';
+
+    chartDiv.innerHTML = `
+      <div class="state-box">
+        <div class="loading-spinner"></div>
+        <div class="state-text">AI正在分析题目<br>生成3D图形...</div>
+      </div>`;
+
+    try {
+      const res = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ problem })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || '生成失败，请重试');
+      }
+
+      const figData = await res.json();
+
+      chartDiv.innerHTML = '';
+
+      const layout = {
+        ...figData.layout,
+        autosize: true,
+        margin: { l: 0, r: 0, t: 40, b: 0 },
+        paper_bgcolor: 'white',
+        plot_bgcolor: 'white',
+      };
+
+      Plotly.newPlot(chartDiv, figData.data, layout, {
+        responsive: true,
+        displayModeBar: false,
+        scrollZoom: true,
+      });
+
+      hintDiv.style.display = 'block';
+
+    } catch (e) {
+      chartDiv.innerHTML = `
+        <div class="state-box">
+          <div class="error-box">⚠️ ${e.message}<br><br>请检查题目描述是否清晰，或换一种方式描述</div>
+        </div>`;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '生成图形';
+    }
+  }
+
+  function fillExample(el) {
+    document.getElementById('problemInput').value = el.textContent;
+  }
+
+  // 回车提交（Shift+Enter换行）
+  document.getElementById('problemInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      generate();
+    }
+  });
+</script>
+
+</body>
+</html>
