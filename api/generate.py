@@ -114,7 +114,7 @@ class handler(BaseHTTPRequestHandler):
             # 调用 Claude 生成 Python 代码
             client = anthropic.Anthropic(api_key=os.environ.get('ANTHROPIC_API_KEY'))
             message = client.messages.create(
-                model='claude-opus-4-5',
+                model='claude-sonnet-4-6',
                 max_tokens=4096,
                 system=SYSTEM_PROMPT,
                 messages=[{'role': 'user', 'content': f'请为以下题目生成3D图形代码：\n{problem}'}]
