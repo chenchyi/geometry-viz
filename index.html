@@ -234,16 +234,18 @@
         throw new Error(err.error || '生成失败，请重试');
       }
 
-      const figData = await res.json();
+      const result = await res.json();
 
       chartDiv.innerHTML = '';
+
+      // 执行 Claude 生成的 JS 代码
+      const fn = new Function(result.code);
+      const figData = fn();
 
       const layout = {
         ...figData.layout,
         autosize: true,
-        margin: { l: 0, r: 0, t: 40, b: 0 },
         paper_bgcolor: 'white',
-        plot_bgcolor: 'white',
       };
 
       Plotly.newPlot(chartDiv, figData.data, layout, {
